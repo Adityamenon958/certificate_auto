@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Certificate of Achievement</title>
+
+    <link href="file:///app/static/fonts/poppins.css" rel="stylesheet">
+
+    <style>
+        @page {
+            size: 215mm 158mm;
+            margin: 0;
+        }
+
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            height: 158mm;
+            /* Set full A4 height */
+            width: 215mm;
+            /* Set full A4 width */
+            background-color: white;
+            font-family: 'Poppins', Arial, sans-serif;
+            box-sizing: border-box;
+            zoom: 1.25;
+        }
+
+
+        .certificate {
+            width: 215mm;
+            height: 158mm;
+            padding-top: 20mm;
+            margin: 0;
+            background: white;
+
+            padding: 0;
+            top: 0;
+            left: 0;
+            box-sizing: border-box;
+            position: fixed;
+            overflow: hidden;
+
+        }
+
+
+
+
+        .title {
+            font-size: 40px;
+            font-weight: 700;
+            text-align: center;
+            font-style: calibri;
+            margin-top: 10mm;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            font-weight: 700;
+            text-align: center;
+            color: #2454d3;
+            font-family: Arial, sans-serif;
+            margin-top: 5mm;
+        }
+
+        .certify {
+            font-size: 18px;
+            text-align: center;
+            margin: 15px 0;
+            font-family: Arial, sans-serif;
+            font-weight: 700;
+            /* Make bold */
+        }
+
+        .name {
+            position: relative;
+            font-size: 40px;
+            font-family: 'Georgia', serif;
+            text-align: center;
+            font-weight: bold;
+            margin-top: 32px;
+            margin-bottom: 10px;
+            line-height: 0.7;
+        }
+
+        .name-underline {
+            border: none;
+            border-top: 1.5px solid #222;
+            width: 90%;
+            margin: -7.5px auto 18px auto;
+        }
+
+        .details {
+            font-size: 18px;
+            text-align: center;
+            margin-bottom: 30px;
+            margin-top: 10px;
+            font-family: Arial, sans-serif;
+            font-style: italic;
+            font-weight: 700;
+            /* Make bold */
+        }
+
+
+
+
+
+        .signature-line {
+            border-top: 1.5px solid #222;
+            width: 100%;
+            margin: 8px auto 0 auto;
+            font-weight: bold;
+            font-size: 16px;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            position: relative;
+            padding-top: 4px;
+        }
+
+        .signature-block {
+            width: 350px;
+            margin: 30px auto 0 auto;
+            text-align: center;
+        }
+
+        .signature-img {
+            height: 50px;
+            margin-bottom: 0;
+            margin-top: 10px;
+        }
+
+        .signature-hr {
+            border: none;
+            border-top: 1.5px solid #222;
+            width: 80%;
+            margin: 2px auto 4px auto;
+            /* brings line closer to signature */
+        }
+
+        .signature-label {
+            font-weight: bold;
+            font-size: 16px;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 0;
+            letter-spacing: 0.5px;
+        }
+
+        /* Top-right blue and yellow triangles */
+        /* Top Right Corner - Yellow Base */
+        /* TOP RIGHT CORNER */
+        .triangle-top-right-yellow {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 0;
+            height: 0;
+            border-top: 150px solid #f1c40f;
+            border-left: 150px solid transparent;
+
+            z-index: 1;
+        }
+
+        .triangle-top-right-blue {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 0;
+            height: 0;
+            border-top: 110px solid #001f4d;
+            border-left: 110px solid transparent;
+
+            z-index: 2;
+        }
+
+        /* BOTTOM LEFT CORNER */
+        .triangle-bottom-left-yellow {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 0;
+            border-bottom: 150px solid #f1c40f;
+            border-right: 150px solid transparent;
+            z-index: 1;
+        }
+
+        .triangle-bottom-left-blue {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 0;
+            border-bottom: 110px solid #001f4d;
+            border-right: 110px solid transparent;
+            z-index: 2;
+        }
+
+        .custom-footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        /* Blue full-width bar */
+        .footer-blue-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 27px;
+            width: 100%;
+            background-color: #001f4d;
+            z-index: 0;
+        }
+
+        /* Diagonal white wedge in center */
+        /* Diagonal white wedge in center */
+        /* Diagonal white wedge in center */
+        /* Diagonal white wedge in center */
+        /* Diagonal white line in center of the blue footer bar */
+        .footer-white-diagonal {
+            position: absolute;
+            bottom: -1px;
+            left: 33%;
+            transform: translateX(-50%);
+            z-index: 2;
+        }
+
+
+
+
+
+
+
+        /* Bottom-right yellow triangle */
+        .footer-yellow-corner {
+            position: absolute;
+            bottom: -9px;
+            right: 0;
+            z-index: 2;
+        }
+
+        .logos {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 24px;
+            /* adjust spacing as needed */
+            margin-bottom: 16px;
+        }
+
+        .logos img {
+            height: 80px;
+            object-fit: contain;
+        }
+    </style>
+</head>
+
+<body>
+
+
+
+
+
+    <div class="certificate text-center">
+        <!-- Corner triangles -->
+        <div class="triangle-top-right-blue"></div>
+        <div class="triangle-top-right-yellow"></div>
+        <div class="triangle-bottom-left-blue"></div>
+        <div class="triangle-bottom-left-yellow"></div>
+
+        <!-- Logo in top-left corner -->
+        <div style="position: absolute; top: 20px; left: 20px;">
+            <img src="{{ logo_url }}" alt="Logo" style="height: 120px; object-fit: contain;">
+
+
+
+
+
+
+        </div>
+
+
+
+
+        <div class="title" style="font-family: Arial, sans-serif;">CERTIFICATE <br><small class="d-block mt-2"
+                style="font-size: 18px; font-weight: 600;">──────
+                OF ACHIEVEMENT ──────</small></div>
+
+        <div class="subtitle mt-3">LEVELUP ONLINE EDUCATION</div>
+
+        <div class="certify">This is to Certify That</div>
+
+        <div class="name">{{ name }}</div>
+        <hr class="name-underline">
+
+
+
+        <div class="details">
+            Has Successfully Completed Her <strong id="course">{{ course }}</strong> Course<br>
+            With Level Up Online Education In The Month Of <strong id="date">{{ month }}</strong>
+        </div>
+
+        <div class="logos">
+            <img src="{{ certify_url }}" alt="Certified" style="height: 80px; object-fit: contain;">
+        </div>
+
+        <div class="signature-block">
+            <img src="{{ signature_url }}" alt="Signature" class="signature-img">
+            <hr class="signature-hr">
+            <div class="signature-label">ACADEMIC HEAD'S SIGNATURE</div>
+        </div>
+
+        <div class="custom-footer">
+            <div class="footer-blue-bar"></div>
+
+            <!-- The white diagonal bar -->
+            <svg width="130" height="30" class="footer-white-diagonal" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="130,30 95,0 35,0 70,30" fill="white" />
+            </svg>
+
+
+
+
+
+
+
+
+            <svg width="130" height="32" class="footer-yellow-corner" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="0,32 110,0 130,0 130,32" fill="#f1c40f" />
+            </svg>
+
+
+
+
+
+
+        </div>
+
+
+
+
+
+    </div>
+
+</body>
+
+</html>

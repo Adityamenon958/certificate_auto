@@ -1,0 +1,12 @@
+.env
+credentials.json
+ecc_credentials.json
+certificates/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+.venv
