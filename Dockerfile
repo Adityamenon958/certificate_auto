@@ -13,7 +13,7 @@ ENV PYTHONUNBUFFERED=1
 # Set work directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies and required fonts for wkhtmltopdf
 RUN apt-get update && apt-get install -y \
     curl \
     wget \
@@ -22,15 +22,23 @@ RUN apt-get update && apt-get install -y \
     fonts-freefont-ttf \
     fontconfig \
     xvfb \
+    xfonts-75dpi \
+    xfonts-base \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Google Fonts (Poppins)
 RUN apt-get update && apt-get install -y fonts-googlefonts || true
 
-# Install wkhtmltopdf
-RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.buster_amd64.deb && \
-    dpkg -i wkhtmltox_0.12.6-1.buster_amd64.deb || apt-get install -f -y && \
-    rm wkhtmltox_0.12.6-1.buster_amd64.deb
+# Install wkhtmltopdf with verification
+RUN apt-get update && \
+    wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.buster_amd64.deb && \
+    apt-get install -y ./wkhtmltox_0.12.6-1.buster_amd64.deb || \
+    (dpkg -i wkhtmltox_0.12.6-1.buster_amd64.deb && apt-get install -f -y) && \
+    rm wkhtmltox_0.12.6-1.buster_amd64.deb && \
+    which wkhtmltopdf && \
+    wkhtmltopdf --version && \
+    echo "wkhtmltopdf installed successfully at: $(which wkhtmltopdf)" && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
 COPY requirements.txt .
@@ -48,4 +56,3 @@ EXPOSE 8000
 
 # Run the app with gunicorn
 CMD ["gunicorn", "app:app", "--bind=0.0.0.0:8000", "--workers=1", "--timeout=120"]
-
