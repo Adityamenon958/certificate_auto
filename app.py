@@ -123,9 +123,43 @@ def send_email(receiver_email, certificate_path, name, course, month):
 def generate_all_certificates():
     print(f"[SCHEDULER] Running certificate generation at {datetime.now(ZoneInfo('Asia/Kolkata'))}")
 
-    # Configure wkhtmltopdf path (Linux path for Docker container)
-    config = pdfkit.configuration(wkhtmltopdf='/usr/bin/wkhtmltopdf')
-
+    # Auto-detect wkhtmltopdf path
+    import shutil
+    import subprocess
+    
+    wkhtmltopdf_path = None
+    
+    # Try to find it in PATH first
+    wkhtmltopdf_path = shutil.which('wkhtmltopdf')
+    
+    # If not in PATH, check common locations
+    if not wkhtmltopdf_path:
+        common_paths = [
+            '/usr/bin/wkhtmltopdf',
+            '/usr/local/bin/wkhtmltopdf',
+            '/opt/wkhtmltopdf/bin/wkhtmltopdf',
+        ]
+        for path in common_paths:
+            if os.path.exists(path):
+                wkhtmltopdf_path = path
+                break
+    
+    # If still not found, try using 'which' command
+    if not wkhtmltopdf_path:
+        try:
+            result = subprocess.run(['which', 'wkhtmltopdf'], capture_output=True, text=True)
+            if result.returncode == 0:
+                wkhtmltopdf_path = result.stdout.strip()
+        except:
+            pass
+    
+    # Configure pdfkit
+    if wkhtmltopdf_path:
+        print(f"[INFO] Found wkhtmltopdf at: {wkhtmltopdf_path}")
+        config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+    else:
+        print("[WARNING] wkhtmltopdf not found, trying auto-detect...")
+        config = pdfkit.configuration()  # Let pdfkit try to find it
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_dict(CREDS_FILE, scope)
     client = gspread.authorize(creds)
