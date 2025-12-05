@@ -1,4 +1,3 @@
-
 import base64
 import os
 import json
@@ -10,7 +9,6 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
-
 from flask import Flask, render_template
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
@@ -55,7 +53,6 @@ OUTPUT_DIR = os.getenv("OUTPUT_DIR", "certificates")
 # Create output directory
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-
 def normalize_time_string(time_str):
     """Convert various time formats or Google Sheets float to HH:MM (24-hour) string."""
     if isinstance(time_str, float) or isinstance(time_str, int):
@@ -79,7 +76,6 @@ def normalize_time_string(time_str):
         return f"{int(match.group(1)):02d}:{match.group(2)}"
     return time_str  # fallback
 
-
 def send_email(receiver_email, certificate_path, name, course, month):
     try:
         # Compose the email body
@@ -97,16 +93,13 @@ def send_email(receiver_email, certificate_path, name, course, month):
         </body>
         </html>
         """
-
         # Set up the MIME structure for the email
         msg = MIMEMultipart()
         msg['From'] = SENDER_EMAIL
         msg['To'] = receiver_email
         msg['Subject'] = f"Certificate of Achievement: {course}"
-
         # Attach the HTML message
         msg.attach(MIMEText(message_with_unsubscribe, "html"))
-
         # Attach the certificate PDF
         with open(certificate_path, "rb") as attachment:
             part = MIMEBase('application', 'octet-stream')
@@ -114,14 +107,12 @@ def send_email(receiver_email, certificate_path, name, course, month):
             encoders.encode_base64(part)
             part.add_header('Content-Disposition', f"attachment; filename={os.path.basename(certificate_path)}")
             msg.attach(part)
-
         # Initialize SMTP server and send email
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
             server.starttls()
             server.login(SMTP_USER, SMTP_PASSWORD)
             server.sendmail(SENDER_EMAIL, receiver_email, msg.as_string())
             print(f"[SUCCESS] Certificate sent to {name} at {receiver_email}")
-
     except smtplib.SMTPException as e:
         print(f"[ERROR] SMTP error while sending to {name}: {str(e)}")
         raise
@@ -129,12 +120,11 @@ def send_email(receiver_email, certificate_path, name, course, month):
         print(f"[ERROR] Failed to send email to {name}: {str(e)}")
         raise
 
-
 def generate_all_certificates():
     print(f"[SCHEDULER] Running certificate generation at {datetime.now(ZoneInfo('Asia/Kolkata'))}")
 
-    # Configure wkhtmltopdf path
-    config = pdfkit.configuration(wkhtmltopdf=r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe')
+    # Configure wkhtmltopdf path (Linux path for Docker container)
+    config = pdfkit.configuration(wkhtmltopdf='/usr/local/bin/wkhtmltopdf')
 
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_dict(CREDS_FILE, scope)
@@ -238,7 +228,6 @@ def generate_all_certificates():
             if cert_sent_col:
                 sheet.update_cell(row_idx, cert_sent_col, "Yes" if email_sent else "No")
 
-
 # === Scheduler ===
 def start_scheduler(app):
     timezone = ZoneInfo("Asia/Kolkata")
@@ -251,24 +240,19 @@ def start_scheduler(app):
 
     trigger = CronTrigger(minute="*", timezone=timezone)  # Run every minute
     scheduler.add_job(scheduled_task, trigger, misfire_grace_time=60)
-
     scheduler.start()
     print(f"[INFO] Scheduler started at {datetime.now(timezone)} (Asia/Kolkata)")
 
-
 # Start scheduler immediately after creating app
 start_scheduler(app)
-
 
 # Simple health check route
 @app.route("/")
 def health():
     return {"status": "Certificate generation service is running", "time": datetime.now(ZoneInfo("Asia/Kolkata")).isoformat()}
 
-
 if __name__ == "__main__":
     print("[INFO] Starting Certificate Generation Service...")
     print(f"[INFO] Sheet Name: {SHEET_NAME}")
     print(f"[INFO] Output Directory: {OUTPUT_DIR}")
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 8000)), debug=False)
-
