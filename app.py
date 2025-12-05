@@ -125,65 +125,91 @@ def send_email(receiver_email, certificate_path, name, course, month):
 def generate_all_certificates():
     print(f"[SCHEDULER] Running certificate generation at {datetime.now(ZoneInfo('Asia/Kolkata'))}")
 
-    # Auto-detect wkhtmltopdf path with detailed logging
-    print("[DEBUG] Searching for wkhtmltopdf...")
+    # Auto-detect wkhtmltopdf path
+    import subprocess
+    import shutil
     
     wkhtmltopdf_path = None
     
-    # Try to find it in PATH first
-    wkhtmltopdf_path = shutil.which('wkhtmltopdf')
-    if wkhtmltopdf_path:
-        print(f"[DEBUG] Found in PATH: {wkhtmltopdf_path}")
+    print("[DEBUG] Searching for wkhtmltopdf...")
     
-    # If not in PATH, check common locations
-    if not wkhtmltopdf_path:
-        common_paths = [
-            '/usr/bin/wkhtmltopdf',
-            '/usr/local/bin/wkhtmltopdf',
-            '/opt/wkhtmltopdf/bin/wkhtmltopdf',
-            '/usr/bin/wkhtmltox/bin/wkhtmltopdf',
-        ]
-        print(f"[DEBUG] Checking common paths: {common_paths}")
-        for path in common_paths:
-            if os.path.exists(path):
-                print(f"[DEBUG] Found at: {path}")
-                wkhtmltopdf_path = path
-                break
+    # Method 1: Try common paths
+    common_paths = [
+        '/usr/bin/wkhtmltopdf',
+        '/usr/local/bin/wkhtmltopdf',
+        '/opt/wkhtmltopdf/bin/wkhtmltopdf',
+        '/usr/bin/wkhtmltox/bin/wkhtmltopdf'
+    ]
     
-    # If still not found, try using 'which' command
+    print(f"[DEBUG] Checking common paths: {common_paths}")
+    for path in common_paths:
+        if os.path.isfile(path) and os.access(path, os.X_OK):
+            wkhtmltopdf_path = path
+            print(f"[INFO] Found wkhtmltopdf at: {wkhtmltopdf_path}")
+            break
+    
+    # Method 2: Try 'which' command
     if not wkhtmltopdf_path:
+        print("[DEBUG] Trying 'which' command...")
         try:
-            print("[DEBUG] Trying 'which' command...")
-            result = subprocess.run(['which', 'wkhtmltopdf'], capture_output=True, text=True, timeout=5)
+            result = subprocess.run(['which', 'wkhtmltopdf'], 
+                                  capture_output=True, 
+                                  text=True, 
+                                  timeout=5)
             if result.returncode == 0:
-                wkhtmltopdf_path = result.stdout.strip()
-                print(f"[DEBUG] Found via 'which': {wkhtmltopdf_path}")
+                path = result.stdout.strip()
+                if path and os.path.isfile(path) and os.access(path, os.X_OK):
+                    wkhtmltopdf_path = path
+                    print(f"[INFO] Found wkhtmltopdf via 'which': {wkhtmltopdf_path}")
         except Exception as e:
             print(f"[DEBUG] 'which' command failed: {e}")
     
-    # If still not found, try 'find' command
+    # Method 3: Try 'find' command (more specific)
     if not wkhtmltopdf_path:
+        print("[DEBUG] Trying 'find' command in /usr...")
         try:
-            print("[DEBUG] Trying 'find' command in /usr...")
-            result = subprocess.run(['find', '/usr', '-name', 'wkhtmltopdf', '-type', 'f', '2>/dev/null'], 
-                                  shell=True, capture_output=True, text=True, timeout=10)
+            result = subprocess.run(
+                ['find', '/usr', '-name', 'wkhtmltopdf', '-type', 'f', '-executable', '2>/dev/null'],
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
             if result.returncode == 0 and result.stdout.strip():
-                paths = result.stdout.strip().split('\n')
-                wkhtmltopdf_path = paths[0]
-                print(f"[DEBUG] Found via 'find': {wkhtmltopdf_path}")
+                # Get first valid result
+                for line in result.stdout.strip().split('\n'):
+                    path = line.strip()
+                    if path and path != '.' and os.path.isfile(path) and os.access(path, os.X_OK):
+                        wkhtmltopdf_path = os.path.abspath(path)
+                        print(f"[INFO] Found wkhtmltopdf via 'find': {wkhtmltopdf_path}")
+                        break
         except Exception as e:
             print(f"[DEBUG] 'find' command failed: {e}")
     
-    # Configure pdfkit
-    if wkhtmltopdf_path:
-        print(f"[INFO] Using wkhtmltopdf at: {wkhtmltopdf_path}")
-        config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+    # Method 4: Try shutil.which (Python built-in)
+    if not wkhtmltopdf_path:
+        print("[DEBUG] Trying shutil.which...")
+        path = shutil.which('wkhtmltopdf')
+        if path and os.path.isfile(path) and os.access(path, os.X_OK):
+            wkhtmltopdf_path = os.path.abspath(path)
+            print(f"[INFO] Found wkhtmltopdf via shutil.which: {wkhtmltopdf_path}")
+    
+    # Final validation
+    if not wkhtmltopdf_path:
+        print("[ERROR] wkhtmltopdf not found! Trying to use default configuration...")
+        config = pdfkit.configuration()  # Let pdfkit try to find it
     else:
-        print("[ERROR] wkhtmltopdf not found anywhere!")
-        print("[ERROR] This means the Dockerfile installation may have failed.")
-        print("[ERROR] Attempting to continue without explicit path (will likely fail)...")
-        config = pdfkit.configuration()  # This will likely fail, but we'll see the error
+        # Validate it's actually a file (not a directory)
+        if not os.path.isfile(wkhtmltopdf_path):
+            print(f"[ERROR] Found path is not a file: {wkhtmltopdf_path}")
+            config = pdfkit.configuration()
+        else:
+            print(f"[INFO] Using wkhtmltopdf at: {wkhtmltopdf_path}")
+            config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
 
+    # Rest of your code continues here...
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    # ... rest of the function
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_dict(CREDS_FILE, scope)
     client = gspread.authorize(creds)
