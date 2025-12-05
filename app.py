@@ -123,8 +123,8 @@ def send_email(receiver_email, certificate_path, name, course, month):
 def generate_all_certificates():
     print(f"[SCHEDULER] Running certificate generation at {datetime.now(ZoneInfo('Asia/Kolkata'))}")
 
-    # Configure wkhtmltopdf path (Linux path for Docker container)
-    config = pdfkit.configuration(wkhtmltopdf='/usr/local/bin/wkhtmltopdf')
+    # Configure wkhtmltopdf - let pdfkit auto-detect the path
+config = pdfkit.configuration()
 
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_dict(CREDS_FILE, scope)
