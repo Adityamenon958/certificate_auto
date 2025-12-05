@@ -29,12 +29,20 @@ RUN apt-get update && apt-get install -y \
 # Install Google Fonts (Poppins)
 RUN apt-get update && apt-get install -y fonts-googlefonts || true
 
-# Install wkhtmltopdf with verification
+# Install wkhtmltopdf dependencies and wkhtmltopdf
 RUN apt-get update && \
+    # Install required dependencies for the .deb package
+    apt-get install -y libjpeg62-turbo libssl1.1 || \
+    (apt-get install -y libjpeg-turbo libssl3 && \
+     # Create symlinks if needed
+     (ln -s /usr/lib/x86_64-linux-gnu/libjpeg.so.8 /usr/lib/x86_64-linux-gnu/libjpeg.so.62 || true) && \
+     (ln -s /usr/lib/x86_64-linux-gnu/libssl.so.3 /usr/lib/x86_64-linux-gnu/libssl.so.1.1 || true)) && \
+    # Download and install wkhtmltopdf
     wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.buster_amd64.deb && \
-    apt-get install -y ./wkhtmltox_0.12.6-1.buster_amd64.deb || \
-    (dpkg -i wkhtmltox_0.12.6-1.buster_amd64.deb && apt-get install -f -y) && \
+    dpkg -i --force-depends wkhtmltox_0.12.6-1.buster_amd64.deb || true && \
+    apt-get install -f -y && \
     rm wkhtmltox_0.12.6-1.buster_amd64.deb && \
+    # Verify installation
     which wkhtmltopdf && \
     wkhtmltopdf --version && \
     echo "wkhtmltopdf installed successfully at: $(which wkhtmltopdf)" && \
