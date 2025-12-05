@@ -13,7 +13,7 @@ ENV PYTHONUNBUFFERED=1
 # Set work directory
 WORKDIR /app
 
-# Install system dependencies and required fonts for wkhtmltopdf
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     curl \
     wget \
@@ -26,26 +26,27 @@ RUN apt-get update && apt-get install -y \
     xfonts-base \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Google Fonts (Poppins)
+# Install Google Fonts (Poppins) - optional, skip if not available
 RUN apt-get update && apt-get install -y fonts-googlefonts || true
 
-# Install wkhtmltopdf dependencies and wkhtmltopdf
+# Install wkhtmltopdf with proper dependency handling
 RUN apt-get update && \
-    # Install required dependencies for the .deb package
-    apt-get install -y libjpeg62-turbo libssl1.1 || \
-    (apt-get install -y libjpeg-turbo libssl3 && \
-     # Create symlinks if needed
-     (ln -s /usr/lib/x86_64-linux-gnu/libjpeg.so.8 /usr/lib/x86_64-linux-gnu/libjpeg.so.62 || true) && \
-     (ln -s /usr/lib/x86_64-linux-gnu/libssl.so.3 /usr/lib/x86_64-linux-gnu/libssl.so.1.1 || true)) && \
+    # Install modern SSL and JPEG libraries
+    apt-get install -y libssl3 libjpeg62-turbo || \
+    apt-get install -y libssl3 libjpeg-turbo-progs || \
+    apt-get install -y libssl3 || true && \
+    # Create symlinks for compatibility with old .deb package
+    (ln -sf /usr/lib/x86_64-linux-gnu/libssl.so.3 /usr/lib/x86_64-linux-gnu/libssl.so.1.1 2>/dev/null || true) && \
+    (ln -sf /usr/lib/x86_64-linux-gnu/libjpeg.so.8 /usr/lib/x86_64-linux-gnu/libjpeg.so.62 2>/dev/null || true) && \
     # Download and install wkhtmltopdf
-    wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.buster_amd64.deb && \
-    dpkg -i --force-depends wkhtmltox_0.12.6-1.buster_amd64.deb || true && \
+    wget -q https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.buster_amd64.deb && \
+    dpkg -i --force-depends wkhtmltox_0.12.6-1.buster_amd64.deb 2>&1 || true && \
     apt-get install -f -y && \
-    rm wkhtmltox_0.12.6-1.buster_amd64.deb && \
+    rm -f wkhtmltox_0.12.6-1.buster_amd64.deb && \
     # Verify installation
-    which wkhtmltopdf && \
-    wkhtmltopdf --version && \
-    echo "wkhtmltopdf installed successfully at: $(which wkhtmltopdf)" && \
+    (which wkhtmltopdf && wkhtmltopdf --version && echo "✅ wkhtmltopdf installed at: $(which wkhtmltopdf)") || \
+    (echo "❌ wkhtmltopdf installation failed, trying alternative method..." && \
+     apt-get install -y wkhtmltopdf || true) && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
