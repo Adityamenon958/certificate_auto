@@ -16,6 +16,8 @@ import pdfkit
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from dotenv import load_dotenv
+import shutil
+import subprocess
 
 # Load environment variables
 load_dotenv()
@@ -123,14 +125,15 @@ def send_email(receiver_email, certificate_path, name, course, month):
 def generate_all_certificates():
     print(f"[SCHEDULER] Running certificate generation at {datetime.now(ZoneInfo('Asia/Kolkata'))}")
 
-    # Auto-detect wkhtmltopdf path
-    import shutil
-    import subprocess
+    # Auto-detect wkhtmltopdf path with detailed logging
+    print("[DEBUG] Searching for wkhtmltopdf...")
     
     wkhtmltopdf_path = None
     
     # Try to find it in PATH first
     wkhtmltopdf_path = shutil.which('wkhtmltopdf')
+    if wkhtmltopdf_path:
+        print(f"[DEBUG] Found in PATH: {wkhtmltopdf_path}")
     
     # If not in PATH, check common locations
     if not wkhtmltopdf_path:
@@ -138,28 +141,49 @@ def generate_all_certificates():
             '/usr/bin/wkhtmltopdf',
             '/usr/local/bin/wkhtmltopdf',
             '/opt/wkhtmltopdf/bin/wkhtmltopdf',
+            '/usr/bin/wkhtmltox/bin/wkhtmltopdf',
         ]
+        print(f"[DEBUG] Checking common paths: {common_paths}")
         for path in common_paths:
             if os.path.exists(path):
+                print(f"[DEBUG] Found at: {path}")
                 wkhtmltopdf_path = path
                 break
     
     # If still not found, try using 'which' command
     if not wkhtmltopdf_path:
         try:
-            result = subprocess.run(['which', 'wkhtmltopdf'], capture_output=True, text=True)
+            print("[DEBUG] Trying 'which' command...")
+            result = subprocess.run(['which', 'wkhtmltopdf'], capture_output=True, text=True, timeout=5)
             if result.returncode == 0:
                 wkhtmltopdf_path = result.stdout.strip()
-        except:
-            pass
+                print(f"[DEBUG] Found via 'which': {wkhtmltopdf_path}")
+        except Exception as e:
+            print(f"[DEBUG] 'which' command failed: {e}")
+    
+    # If still not found, try 'find' command
+    if not wkhtmltopdf_path:
+        try:
+            print("[DEBUG] Trying 'find' command in /usr...")
+            result = subprocess.run(['find', '/usr', '-name', 'wkhtmltopdf', '-type', 'f', '2>/dev/null'], 
+                                  shell=True, capture_output=True, text=True, timeout=10)
+            if result.returncode == 0 and result.stdout.strip():
+                paths = result.stdout.strip().split('\n')
+                wkhtmltopdf_path = paths[0]
+                print(f"[DEBUG] Found via 'find': {wkhtmltopdf_path}")
+        except Exception as e:
+            print(f"[DEBUG] 'find' command failed: {e}")
     
     # Configure pdfkit
     if wkhtmltopdf_path:
-        print(f"[INFO] Found wkhtmltopdf at: {wkhtmltopdf_path}")
+        print(f"[INFO] Using wkhtmltopdf at: {wkhtmltopdf_path}")
         config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
     else:
-        print("[WARNING] wkhtmltopdf not found, trying auto-detect...")
-        config = pdfkit.configuration()  # Let pdfkit try to find it
+        print("[ERROR] wkhtmltopdf not found anywhere!")
+        print("[ERROR] This means the Dockerfile installation may have failed.")
+        print("[ERROR] Attempting to continue without explicit path (will likely fail)...")
+        config = pdfkit.configuration()  # This will likely fail, but we'll see the error
+
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_dict(CREDS_FILE, scope)
     client = gspread.authorize(creds)
