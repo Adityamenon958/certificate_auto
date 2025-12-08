@@ -247,17 +247,19 @@
         }
 
         .logos {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 24px;
-            /* adjust spacing as needed */
+            text-align: center;
+            margin: 0 auto;
             margin-bottom: 16px;
+            width: 100%;
         }
 
         .logos img {
             height: 80px;
+            width: auto;
             object-fit: contain;
+            display: inline-block;
+            vertical-align: middle;
+            margin: 0 12px;
         }
     </style>
 </head>
@@ -304,7 +306,7 @@
 
         <div class="details">
             Has Successfully Completed Her <strong id="course">{{ course }}</strong> Course<br>
-            With Level Up Online Education In The Month Of <strong id="date">{{ month }}</strong>
+            With LevelUp Online Education In The Month Of <strong id="date">{{ month }}</strong>
         </div>
 
         <div class="logos">

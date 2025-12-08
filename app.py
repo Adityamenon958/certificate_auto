@@ -125,90 +125,23 @@ def send_email(receiver_email, certificate_path, name, course, month):
 def generate_all_certificates():
     print(f"[SCHEDULER] Running certificate generation at {datetime.now(ZoneInfo('Asia/Kolkata'))}")
 
-    # Auto-detect wkhtmltopdf path with proper validation
-    import subprocess
-    import shutil
+    # Configure wkhtmltopdf - Windows path for local, auto-detect for Linux
+    import platform
     
-    wkhtmltopdf_path = None
-    
-    print("[DEBUG] Searching for wkhtmltopdf...")
-    
-    # Method 1: Try common paths
-    common_paths = [
-        '/usr/bin/wkhtmltopdf',
-        '/usr/local/bin/wkhtmltopdf',
-        '/opt/wkhtmltopdf/bin/wkhtmltopdf',
-        '/usr/bin/wkhtmltox/bin/wkhtmltopdf'
-    ]
-    
-    print(f"[DEBUG] Checking common paths: {common_paths}")
-    for path in common_paths:
-        if os.path.isfile(path) and os.access(path, os.X_OK):
-            wkhtmltopdf_path = path
-            print(f"[INFO] Found wkhtmltopdf at: {wkhtmltopdf_path}")
-            break
-    
-    # Method 2: Try 'which' command
-    if not wkhtmltopdf_path:
-        print("[DEBUG] Trying 'which' command...")
-        try:
-            result = subprocess.run(['which', 'wkhtmltopdf'], 
-                                  capture_output=True, 
-                                  text=True, 
-                                  timeout=5)
-            if result.returncode == 0:
-                path = result.stdout.strip()
-                if path and path != '.' and os.path.isfile(path) and os.access(path, os.X_OK):
-                    wkhtmltopdf_path = os.path.abspath(path)
-                    print(f"[INFO] Found wkhtmltopdf via 'which': {wkhtmltopdf_path}")
-        except Exception as e:
-            print(f"[DEBUG] 'which' command failed: {e}")
-    
-    # Method 3: Try shutil.which (Python built-in - most reliable)
-    if not wkhtmltopdf_path:
-        print("[DEBUG] Trying shutil.which...")
-        try:
-            path = shutil.which('wkhtmltopdf')
-            if path and path != '.' and os.path.isfile(path) and os.access(path, os.X_OK):
-                wkhtmltopdf_path = os.path.abspath(path)
-                print(f"[INFO] Found wkhtmltopdf via shutil.which: {wkhtmltopdf_path}")
-        except Exception as e:
-            print(f"[DEBUG] shutil.which failed: {e}")
-    
-    # Method 4: Try to find it by testing if it runs
-    if not wkhtmltopdf_path:
-        print("[DEBUG] Trying to test if wkhtmltopdf is in PATH...")
-        try:
-            result = subprocess.run(['wkhtmltopdf', '--version'], 
-                                  capture_output=True, 
-                                  text=True, 
-                                  timeout=5)
-            if result.returncode == 0 or 'wkhtmltopdf' in result.stderr.lower():
-                # It exists in PATH, let pdfkit find it
-                print("[INFO] wkhtmltopdf found in PATH, using default configuration")
-                config = pdfkit.configuration()
-                wkhtmltopdf_path = "PATH"  # Mark that we found it
-        except Exception as e:
-            print(f"[DEBUG] Testing wkhtmltopdf failed: {e}")
-    
-    # Configure pdfkit
-    if not wkhtmltopdf_path:
-        print("[WARNING] wkhtmltopdf not found! Trying default configuration...")
-        config = pdfkit.configuration()  # Let pdfkit try to find it
-    elif wkhtmltopdf_path == "PATH":
-        # Already configured above
-        pass
-    else:
-        # Validate it's actually a file (not a directory)
-        if not os.path.isfile(wkhtmltopdf_path):
-            print(f"[ERROR] Found path is not a file: {wkhtmltopdf_path}")
-            config = pdfkit.configuration()
-        elif not os.access(wkhtmltopdf_path, os.X_OK):
-            print(f"[ERROR] Found path is not executable: {wkhtmltopdf_path}")
-            config = pdfkit.configuration()
-        else:
-            print(f"[INFO] Using wkhtmltopdf at: {wkhtmltopdf_path}")
+    if platform.system() == 'Windows':
+        # Windows local path
+        wkhtmltopdf_path = r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'
+        if os.path.isfile(wkhtmltopdf_path):
             config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+            print(f"[INFO] Using Windows wkhtmltopdf at: {wkhtmltopdf_path}")
+        else:
+            print("[WARNING] Windows wkhtmltopdf not found, trying default...")
+            config = pdfkit.configuration()
+    else:
+        # Linux (production) - use default configuration
+        config = pdfkit.configuration()
+        print("[INFO] Using default wkhtmltopdf configuration for Linux")
+
 
     
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]

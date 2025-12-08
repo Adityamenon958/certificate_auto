@@ -29,25 +29,12 @@ RUN apt-get update && apt-get install -y \
 # Install Google Fonts (Poppins) - optional, skip if not available
 RUN apt-get update && apt-get install -y fonts-googlefonts || true
 
-# Install wkhtmltopdf with proper dependency handling
-RUN apt-get update && \
-    # Install modern SSL and JPEG libraries
-    apt-get install -y libssl3 libjpeg62-turbo || \
-    apt-get install -y libssl3 libjpeg-turbo-progs || \
-    apt-get install -y libssl3 || true && \
-    # Create symlinks for compatibility with old .deb package
-    (ln -sf /usr/lib/x86_64-linux-gnu/libssl.so.3 /usr/lib/x86_64-linux-gnu/libssl.so.1.1 2>/dev/null || true) && \
-    (ln -sf /usr/lib/x86_64-linux-gnu/libjpeg.so.8 /usr/lib/x86_64-linux-gnu/libjpeg.so.62 2>/dev/null || true) && \
-    # Download and install wkhtmltopdf
-    wget -q https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.buster_amd64.deb && \
-    dpkg -i --force-depends wkhtmltox_0.12.6-1.buster_amd64.deb 2>&1 || true && \
-    apt-get install -f -y && \
-    rm -f wkhtmltox_0.12.6-1.buster_amd64.deb && \
-    # Verify installation
-    (which wkhtmltopdf && wkhtmltopdf --version && echo "✅ wkhtmltopdf installed at: $(which wkhtmltopdf)") || \
-    (echo "❌ wkhtmltopdf installation failed, trying alternative method..." && \
-     apt-get install -y wkhtmltopdf || true) && \
-    rm -rf /var/lib/apt/lists/*
+# Install wkhtmltopdf (from .deb to ensure compatibility)
+# Install wkhtmltopdf dependencies and the package
+RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.buster_amd64.deb && \
+    dpkg -i wkhtmltox_0.12.6-1.buster_amd64.deb || apt-get install -f -y && \
+    apt-get install -y wkhtmltopdf && \
+    rm wkhtmltox_0.12.6-1.buster_amd64.deb
 
 # Install Python dependencies
 COPY requirements.txt .
