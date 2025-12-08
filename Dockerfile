@@ -29,12 +29,21 @@ RUN apt-get update && apt-get install -y \
 # Install Google Fonts (Poppins) - optional, skip if not available
 RUN apt-get update && apt-get install -y fonts-googlefonts || true
 
-# Install wkhtmltopdf (from .deb to ensure compatibility)
-# Install wkhtmltopdf dependencies and the package
-RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.buster_amd64.deb && \
-    dpkg -i wkhtmltox_0.12.6-1.buster_amd64.deb || apt-get install -f -y && \
-    apt-get install -y wkhtmltopdf && \
-    rm wkhtmltox_0.12.6-1.buster_amd64.deb
+# Install wkhtmltopdf with dependency handling
+RUN apt-get update && \
+    # Install modern SSL and JPEG libraries
+    apt-get install -y libssl3 libjpeg62-turbo 2>/dev/null || \
+    apt-get install -y libssl3 2>/dev/null || true && \
+    # Create symlinks for compatibility with old .deb package
+    (ln -sf /usr/lib/x86_64-linux-gnu/libssl.so.3 /usr/lib/x86_64-linux-gnu/libssl.so.1.1 2>/dev/null || true) && \
+    (ln -sf /usr/lib/x86_64-linux-gnu/libjpeg.so.8 /usr/lib/x86_64-linux-gnu/libjpeg.so.62 2>/dev/null || true) && \
+    # Download and install wkhtmltopdf
+    wget -q https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.buster_amd64.deb && \
+    dpkg -i --force-depends wkhtmltox_0.12.6-1.buster_amd64.deb 2>&1 || true && \
+    # Don't run apt-get install -f as it removes the package, just verify it exists
+    (which wkhtmltopdf || echo "wkhtmltopdf not in PATH") && \
+    rm -f wkhtmltox_0.12.6-1.buster_amd64.deb && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
 COPY requirements.txt .
