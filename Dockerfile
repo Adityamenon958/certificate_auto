@@ -35,12 +35,14 @@ RUN apt-get update && \
     apt-get install -y libssl3 libjpeg62-turbo 2>/dev/null || \
     apt-get install -y libssl3 2>/dev/null || true && \
     # Create symlinks for compatibility with old .deb package
+    # ✅ CRITICAL: Create libcrypto.so.1.1 symlink (this was missing!)
+    (ln -sf /usr/lib/x86_64-linux-gnu/libcrypto.so.3 /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1 2>/dev/null || true) && \
     (ln -sf /usr/lib/x86_64-linux-gnu/libssl.so.3 /usr/lib/x86_64-linux-gnu/libssl.so.1.1 2>/dev/null || true) && \
     (ln -sf /usr/lib/x86_64-linux-gnu/libjpeg.so.8 /usr/lib/x86_64-linux-gnu/libjpeg.so.62 2>/dev/null || true) && \
     # Download and install wkhtmltopdf
     wget -q https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.buster_amd64.deb && \
     dpkg -i --force-depends wkhtmltox_0.12.6-1.buster_amd64.deb 2>&1 || true && \
-    # Don't run apt-get install -f as it removes the package, just verify it exists
+    # Verify installation
     (which wkhtmltopdf || echo "wkhtmltopdf not in PATH") && \
     rm -f wkhtmltox_0.12.6-1.buster_amd64.deb && \
     rm -rf /var/lib/apt/lists/*
@@ -61,3 +63,4 @@ EXPOSE 8000
 
 # Run the app with gunicorn
 CMD ["gunicorn", "app:app", "--bind=0.0.0.0:8000", "--workers=1", "--timeout=120"]
+
